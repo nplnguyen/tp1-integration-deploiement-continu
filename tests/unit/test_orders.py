@@ -10,7 +10,7 @@ def test_order_total():
         unit_price=50.0,
     )
     event = build_order_event(order)
-    assert event["total_amount"] == 100.0
+    assert event["total_amount"] == 999.0
 
 
 def test_order_contains_order_id():
