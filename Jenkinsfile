@@ -115,6 +115,24 @@ pipeline {
             }
         }
 
+            stage('Cleanup before SonarQube') {
+        steps {
+            sh '''
+                docker stop \
+                    sales-api \
+                    sales-kafka \
+                    sales-zookeeper \
+                    sales-spark-master \
+                    sales-spark-worker \
+                    sales-spark-streaming \
+                    sales-postgres \
+                    2>/dev/null || true
+            '''
+        }
+    }
+
+    stage('SonarQube') {
+
         stage('SonarQube') {
             steps {
                 script {
