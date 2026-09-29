@@ -6,7 +6,7 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: sales-api
     environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC: sales.orders
     ports:
       - "8000:8000"
@@ -70,7 +70,7 @@ services:
       - data-platform
 
   spark-master:
-    image: bitnami/spark:3.5
+    image: treeverse/bitnami-spark:3.5
     container_name: sales-spark-master
     environment:
       SPARK_MODE: master
@@ -81,7 +81,7 @@ services:
       - data-platform
 
   spark-worker:
-    image: bitnami/spark:3.5
+    image: treeverse/bitnami-spark:3.5
     container_name: sales-spark-worker
     depends_on:
       - spark-master
