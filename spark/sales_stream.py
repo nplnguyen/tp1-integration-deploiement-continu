@@ -12,6 +12,7 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "sales")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "sales")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "sales")
+CHECKPOINT_LOCATION = os.getenv("CHECKPOINT_LOCATION", "/opt/spark-app/checkpoints/sales")
 
 spark = (
     SparkSession.builder
@@ -76,7 +77,7 @@ query = (
     orders.writeStream
     .foreachBatch(write_to_postgres)
     .outputMode("append")
-    .option("checkpointLocation", "/tmp/sales-checkpoint")
+    .option("checkpointLocation", CHECKPOINT_LOCATION)
     .start()
 )
 

@@ -1,4 +1,6 @@
 import pytest
+from pydantic import ValidationError
+
 from app.main import Order, build_order_event
 
 
@@ -25,7 +27,7 @@ def test_order_contains_order_id():
 
 
 def test_quantity_must_be_positive():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="quantity"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -35,7 +37,7 @@ def test_quantity_must_be_positive():
 
 
 def test_quantity_must_not_be_negative():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="quantity"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -55,7 +57,7 @@ def test_quantity_maximum():
 
 
 def test_quantity_cannot_exceed_maximum():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="quantity"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -65,7 +67,7 @@ def test_quantity_cannot_exceed_maximum():
 
 
 def test_price_must_be_positive():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="unit_price"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -75,7 +77,7 @@ def test_price_must_be_positive():
 
 
 def test_negative_price_is_invalid():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="unit_price"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -85,7 +87,7 @@ def test_negative_price_is_invalid():
 
 
 def test_price_cannot_exceed_maximum():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="unit_price"):
         Order(
             customer_id="C001",
             product_id="P001",
@@ -95,7 +97,7 @@ def test_price_cannot_exceed_maximum():
 
 
 def test_customer_id_must_be_valid():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="customer_id"):
         Order(
             customer_id="C",
             product_id="P001",
@@ -105,7 +107,7 @@ def test_customer_id_must_be_valid():
 
 
 def test_product_id_must_be_valid():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError, match="product_id"):
         Order(
             customer_id="C001",
             product_id="P",
