@@ -113,11 +113,14 @@ pipeline {
                     def scannerHome = tool 'SonarScanner'
 
                     withSonarQubeEnv('SonarQube') {
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                              -Dsonar.projectKey=real-time-sales-devops \
-                              -Dsonar.projectName="Real-Time Sales DevOps TP"
-                        """
+                        withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                            sh """
+                                ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=real-time-sales-devops \
+                                -Dsonar.projectName="Real-Time Sales DevOps TP" \
+                                -Dsonar.token=\$SONAR_TOKEN
+                            """
+                        }
                     }
                 }
             }
