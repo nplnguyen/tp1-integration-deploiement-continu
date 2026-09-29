@@ -2,12 +2,12 @@ pipeline {
     agent any
 
     environment {
-        PYTHON = 'python3'
+        COMPOSE_PROJECT_NAME = 'tp1-integration-deploiement-continu'
 
+        PYTHON = 'python3'
         RUN_INTEGRATION_TESTS = 'true'
         RUN_E2E_TESTS = 'true'
 
-        // Communication Jenkins -> services Docker
         KAFKA_BOOTSTRAP_SERVERS = 'kafka:29092'
         POSTGRES_HOST = 'postgres'
         POSTGRES_DB = 'sales'
