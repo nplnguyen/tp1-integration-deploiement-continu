@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sh 'python3 --version'
                 sh 'docker --version'
-                sh 'docker compose version'
+                sh 'docker-compose --version'
             }
         }
 
@@ -52,7 +52,7 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 sh '''
-                    docker compose up -d kafka postgres sales-api spark-master spark-worker
+                    docker-compose up -d kafka postgres sales-api spark-master spark-worker
 
                     echo "Waiting for Kafka..."
                     until docker exec sales-kafka \
@@ -71,7 +71,7 @@ pipeline {
                         --partitions 1 \
                         --replication-factor 1
 
-                    docker compose up -d spark-streaming
+                    docker-compose up -d spark-streaming
 
                     python3 -m pytest tests/integration -v \
                       --junitxml=test-results-integration.xml
@@ -81,7 +81,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'docker compose build sales-api spark-streaming'
+                sh 'docker-compose build sales-api spark-streaming'
             }
         }
 
@@ -121,11 +121,8 @@ pipeline {
 
     post {
         always {
-            junit allowEmptyResults: true,
-                  testResults: '**/test-results-*.xml'
-
             archiveArtifacts allowEmptyArchive: true,
-                              artifacts: 'coverage.xml'
+                              artifacts: 'coverage.xml,test-results-*.xml'
         }
     }
 }
