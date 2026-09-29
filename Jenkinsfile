@@ -86,6 +86,14 @@ pipeline {
             docker-compose rm -f spark-streaming
             docker-compose up -d spark-streaming
 
+            echo "Waiting for Spark Streaming to be ready..."
+            until docker logs sales-spark-streaming 2>&1 | grep -q "Initial offsets"
+            do
+                sleep 2
+            done
+
+            echo "Spark Streaming is ready."
+
             python3 -m pytest tests/integration -v \
                 --junitxml=test-results-integration.xml
         '''
