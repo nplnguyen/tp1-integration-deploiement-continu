@@ -50,34 +50,45 @@ pipeline {
         }
 
         stage('Integration Tests') {
-            steps {
-                sh '''
-                    docker-compose up -d kafka postgres sales-api spark-master spark-worker
+        steps {
+            sh '''
+            echo "Cleaning previous TP containers..."
+            docker rm -f \
+                sales-api \
+                sales-kafka \
+                sales-zookeeper \
+                sales-postgres \
+                sales-spark-master \
+                sales-spark-worker \
+                sales-spark-streaming \
+                2>/dev/null || true
 
-                    echo "Waiting for Kafka..."
-                    until docker exec sales-kafka \
-                        kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1
-                    do
-                        sleep 2
-                    done
+            docker-compose up -d kafka postgres sales-api spark-master spark-worker
 
-                    echo "Creating Kafka topic..."
-                    docker exec sales-kafka \
-                        kafka-topics \
-                        --bootstrap-server localhost:29092 \
-                        --create \
-                        --if-not-exists \
-                        --topic sales.orders \
-                        --partitions 1 \
-                        --replication-factor 1
+            echo "Waiting for Kafka..."
+            until docker exec sales-kafka \
+                kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1
+            do
+                sleep 2
+            done
 
-                    docker-compose up -d spark-streaming
+            echo "Creating Kafka topic..."
+            docker exec sales-kafka \
+                kafka-topics \
+                --bootstrap-server localhost:29092 \
+                --create \
+                --if-not-exists \
+                --topic sales.orders \
+                --partitions 1 \
+                --replication-factor 1
 
-                    python3 -m pytest tests/integration -v \
-                      --junitxml=test-results-integration.xml
-                '''
-            }
+            docker-compose up -d spark-streaming
+
+            python3 -m pytest tests/integration -v \
+                --junitxml=test-results-integration.xml
+        '''
         }
+    }
 
         stage('Build') {
             steps {
