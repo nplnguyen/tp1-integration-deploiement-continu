@@ -37,7 +37,7 @@ services:
       - data-platform
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.14
+    image: confluentinc/cp-zookeeper:7.6.1
     container_name: sales-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -46,7 +46,7 @@ services:
       - data-platform
 
   kafka:
-    image: confluentinc/cp-kafka:7.6.14
+    image: confluentinc/cp-kafka:7.6.1
     container_name: sales-kafka
     depends_on:
       - zookeeper
@@ -55,28 +55,38 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1"
-        ]
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 20
+    networks:
+      - data-platform
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: sales-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["kafka-topics"]
+    command:
+      - --bootstrap-server
+      - kafka:29092
+      - --create
+      - --if-not-exists
+      - --topic
+      - sales.orders
+      - --partitions
+      - "1"
+      - --replication-factor
+      - "1"
     networks:
       - data-platform
 
@@ -117,11 +127,12 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       spark-master:
         condition: service_started
-
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_TOPIC: sales.orders
@@ -129,13 +140,11 @@ services:
       POSTGRES_DB: sales
       POSTGRES_USER: sales
       POSTGRES_PASSWORD: sales
-
     command: >
       /opt/spark/bin/spark-submit
       --master spark://spark-master:7077
       --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.7,org.postgresql:postgresql:42.7.3
       /opt/spark-app/sales_stream.py
-
     networks:
       - data-platform
 
