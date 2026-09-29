@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        sonarRunner 'SonarScanner'
-    }
-
     environment {
         PYTHON = 'python3'
 
@@ -100,12 +96,16 @@ pipeline {
 
         stage('SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        sonar-scanner \
-                          -Dsonar.projectKey=real-time-sales-devops \
-                          -Dsonar.projectName="Real-Time Sales DevOps TP"
-                    '''
+                script {
+                    def scannerHome = tool 'SonarScanner'
+
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                              -Dsonar.projectKey=real-time-sales-devops \
+                              -Dsonar.projectName="Real-Time Sales DevOps TP"
+                        """
+                    }
                 }
             }
         }
