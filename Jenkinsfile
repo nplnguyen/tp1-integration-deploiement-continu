@@ -82,6 +82,8 @@ pipeline {
                 --partitions 1 \
                 --replication-factor 1
 
+            docker-compose stop spark-streaming
+            docker-compose rm -f spark-streaming
             docker-compose up -d spark-streaming
 
             python3 -m pytest tests/integration -v \
