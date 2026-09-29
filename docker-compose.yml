@@ -69,6 +69,27 @@ services:
     networks:
       - data-platform
 
+  kafka-init:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: sales-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["kafka-topics"]
+    command:
+      - --bootstrap-server
+      - kafka:29092
+      - --create
+      - --if-not-exists
+      - --topic
+      - sales.orders
+      - --partitions
+      - "1"
+      - --replication-factor
+      - "1"
+    networks:
+      - data-platform
+
   spark-master:
     image: treeverse/bitnami-spark:3.5
     container_name: sales-spark-master
@@ -103,6 +124,8 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       spark-master:

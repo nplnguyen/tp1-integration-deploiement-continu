@@ -7,7 +7,7 @@ pipeline {
         PYTHON = 'python3'
         RUN_INTEGRATION_TESTS = 'true'
         RUN_E2E_TESTS = 'true'
-
+        PIPELINE_TIMEOUT_SECONDS = '180'
         KAFKA_BOOTSTRAP_SERVERS = 'kafka:29092'
         POSTGRES_HOST = 'postgres'
         POSTGRES_DB = 'sales'
@@ -56,6 +56,7 @@ pipeline {
             docker rm -f \
                 sales-api \
                 sales-kafka \
+                sales-kafka-init \
                 sales-zookeeper \
                 sales-postgres \
                 sales-spark-master \

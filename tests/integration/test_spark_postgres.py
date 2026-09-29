@@ -13,6 +13,8 @@ RUN_INTEGRATION = os.getenv(
     "false",
 ).lower() == "true"
 
+PIPELINE_TIMEOUT = int(os.getenv("PIPELINE_TIMEOUT_SECONDS", "30"))
+
 pytestmark = pytest.mark.skipif(
     not RUN_INTEGRATION,
     reason="Integration tests disabled. Set RUN_INTEGRATION_TESTS=true.",
@@ -46,7 +48,7 @@ def test_kafka_spark_postgres_pipeline():
     finally:
         producer.close()
 
-    deadline = time.time() + 30
+    deadline = time.time() + PIPELINE_TIMEOUT
 
     while time.time() < deadline:
         connection = psycopg2.connect(
@@ -87,5 +89,5 @@ def test_kafka_spark_postgres_pipeline():
 
     pytest.fail(
         f"Order {order_id} was not processed by Spark into PostgreSQL "
-        "within 30 seconds."
+        f"within {PIPELINE_TIMEOUT} seconds."
     )

@@ -10,6 +10,8 @@ from app.main import app
 
 RUN_E2E = os.getenv("RUN_E2E_TESTS", "false").lower() == "true"
 
+PIPELINE_TIMEOUT = int(os.getenv("PIPELINE_TIMEOUT_SECONDS", "30"))
+
 pytestmark = pytest.mark.skipif(
     not RUN_E2E,
     reason="E2E tests disabled. Set RUN_E2E_TESTS=true.",
@@ -41,7 +43,7 @@ def test_sales_pipeline_e2e():
 
     order_id = event["order_id"]
 
-    deadline = time.time() + 30
+    deadline = time.time() + PIPELINE_TIMEOUT
 
     while time.time() < deadline:
         connection = psycopg2.connect(
@@ -87,5 +89,5 @@ def test_sales_pipeline_e2e():
 
     pytest.fail(
         f"Order {order_id} was not found in PostgreSQL "
-        "within 30 seconds."
+        f"within {PIPELINE_TIMEOUT} seconds."
     )
