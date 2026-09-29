@@ -132,13 +132,11 @@ pipeline {
     }
 
     stage('SonarQube') {
+        steps {
+            script {
+                 def scannerHome = tool 'SonarScanner'
 
-        stage('SonarQube') {
-            steps {
-                script {
-                    def scannerHome = tool 'SonarScanner'
-
-                    withSonarQubeEnv('SonarQube') {
+                withSonarQubeEnv('SonarQube') {
                         withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                             sh """
                                 ${scannerHome}/bin/sonar-scanner \
