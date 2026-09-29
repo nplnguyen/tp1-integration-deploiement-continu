@@ -1,10 +1,22 @@
 pipeline {
     agent any
 
+    tools {
+        sonarQube 'SonarScanner'
+    }
+
     environment {
         PYTHON = 'python3'
-        RUN_INTEGRATION_TESTS = 'false'
-        RUN_E2E_TESTS = 'false'
+
+        RUN_INTEGRATION_TESTS = 'true'
+        RUN_E2E_TESTS = 'true'
+
+        // Communication Jenkins -> services Docker
+        KAFKA_BOOTSTRAP_SERVERS = 'kafka:29092'
+        POSTGRES_HOST = 'postgres'
+        POSTGRES_DB = 'sales'
+        POSTGRES_USER = 'sales'
+        POSTGRES_PASSWORD = 'sales'
     }
 
     stages {
@@ -19,6 +31,7 @@ pipeline {
             steps {
                 sh 'python3 --version'
                 sh 'docker --version'
+                sh 'docker compose version'
             }
         }
 
@@ -34,7 +47,8 @@ pipeline {
                     python3 -m pytest tests/unit \
                       --cov=app \
                       --cov-report=xml:coverage.xml \
-                      --cov-report=term-missing
+                      --cov-report=term-missing \
+                      --junitxml=test-results-unit.xml
                 '''
             }
         }
@@ -42,8 +56,29 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 sh '''
-                    echo "TODO: enable integration tests after configuring Kafka."
-                    python3 -m pytest tests/integration
+                    docker compose up -d kafka postgres sales-api spark-master spark-worker
+
+                    echo "Waiting for Kafka..."
+                    until docker exec sales-kafka \
+                        kafka-topics --bootstrap-server localhost:29092 --list >/dev/null 2>&1
+                    do
+                        sleep 2
+                    done
+
+                    echo "Creating Kafka topic..."
+                    docker exec sales-kafka \
+                        kafka-topics \
+                        --bootstrap-server localhost:29092 \
+                        --create \
+                        --if-not-exists \
+                        --topic sales.orders \
+                        --partitions 1 \
+                        --replication-factor 1
+
+                    docker compose up -d spark-streaming
+
+                    python3 -m pytest tests/integration -v \
+                      --junitxml=test-results-integration.xml
                 '''
             }
         }
@@ -57,29 +92,40 @@ pipeline {
         stage('E2E Tests') {
             steps {
                 sh '''
-                    echo "TODO: students must activate the complete E2E scenario."
-                    python3 -m pytest tests/e2e
+                    python3 -m pytest tests/e2e -v \
+                      --junitxml=test-results-e2e.xml
                 '''
             }
         }
 
         stage('SonarQube') {
             steps {
-                echo 'TODO: configure SonarQube Scanner / server credentials.'
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=real-time-sales-devops \
+                          -Dsonar.projectName="Real-Time Sales DevOps TP"
+                    '''
+                }
             }
         }
 
         stage('Quality Gate') {
             steps {
-                echo 'TODO: waitForQualityGate() after SonarQube integration.'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
     }
 
     post {
         always {
-            junit allowEmptyResults: true, testResults: '**/test-results.xml'
-            archiveArtifacts allowEmptyArchive: true, artifacts: 'coverage.xml'
+            junit allowEmptyResults: true,
+                  testResults: '**/test-results-*.xml'
+
+            archiveArtifacts allowEmptyArchive: true,
+                              artifacts: 'coverage.xml'
         }
     }
 }
